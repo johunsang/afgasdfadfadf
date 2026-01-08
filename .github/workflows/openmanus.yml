@@ -23,18 +23,22 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install uv
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-
       - name: Clone and Setup OpenManus
+        env:
+          PIP_NO_BUILD_ISOLATION: "false"
         run: |
           git clone https://github.com/FoundationAgents/OpenManus.git /tmp/openmanus
           cd /tmp/openmanus
-          uv venv --python 3.12
+          python -m venv .venv
           source .venv/bin/activate
-          uv pip install --prerelease=allow -r requirements.txt
+          pip install --upgrade pip setuptools wheel
+          # 핵심 패키지 먼저 설치 (OpenAI, Anthropic 등)
+          pip install openai anthropic pydantic pydantic-settings toml tenacity colorama tiktoken
+          # crawl4ai 설치 시 pillow 버전 고정
+          pip install pillow==10.4.0
+          pip install crawl4ai==0.6.3 || pip install crawl4ai
+          # 나머지 requirements 설치 (충돌 무시)
+          pip install -r requirements.txt || true
 
       - name: Configure OpenManus
         run: |
